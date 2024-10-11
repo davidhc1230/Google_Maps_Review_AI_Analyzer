@@ -33,11 +33,12 @@ conversation = RunnableWithMessageHistory(
     max_history=10  # 每個會話最多保留多少條歷史記錄
 )
 
+# 生成隨機的 session_id
+session_id = str(uuid.uuid4())
+
 # 分析評論的功能
 def analyze_reviews():
-    try:
-        # 生成隨機的 session_id
-        session_id = str(uuid.uuid4())
+    try:    
         
         # 讀取評論資料
         with open('Google_Maps_reviews.json', 'r', encoding='utf-8') as f:
@@ -92,9 +93,7 @@ def analyze_reviews():
 # 處理使用者提問的功能
 def handle_user_question(question):
     try:
-        # 生成隨機的 session_id
-        session_id = str(uuid.uuid4())
-        response = conversation.invoke(input=question, config={'configurable': {'session_id': 'David'}})
+        response = conversation.invoke(input=question, config={'configurable': {'session_id': session_id}})
         # 確保回應內容轉換為純文字
         response_text = response.content.replace("\n", "<br>")
         return response_text
