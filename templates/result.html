@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>分析結果</title>
+    <!-- CSS -->
+    <style>
+        body {
+        	font-family: Arial, sans-serif;
+        	padding: 20px;
+        }
+        .container, .chat-container {
+        	max-width: 1200px;
+        	margin: auto;
+        }
+        input {
+			border: 2px solid #000;
+    		border-radius: 20px;
+    		font-size: 20px;
+    		padding-left: 10px;        	
+        }
+        #question-status {
+	    	font-size: 20px;
+	    	font-weight: bold;
+	    	margin-top: 10px;
+		}
+        .result {
+        	padding: 40px;
+        	margin-top: 20px;
+        	font-size: 20px;
+            box-shadow: 0px 0px 10px #0000001a;
+            background-color: #f0f0f0;
+        }
+        #analysis-result, #question-answer {
+        	white-space: pre-wrap;
+        }
+        .btn {
+        	border: 2px solid #000;
+    		border-radius: 10px;
+            padding: 10px 20px;
+            margin-top: 25px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 20px;
+        }
+        .btn-clear {
+        	background-color: #adabab;
+        	color: #000;
+        }
+        .centered-button {
+        	display: flex;
+        	justify-content: center;
+        	margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>分析結果</h1>
+        <div id="result" class="result" >
+            <pre id="analysis-result"></pre>
+        </div>
+
+        <div class="chat-container">
+            <h1>獲取更多資訊</h1>
+            <input type="text" id="user-question" style="width: 50%;" placeholder="請輸入你的問題"><br>
+            <button id="ask-question" class="btn">送出</button><br>
+            <div id="question-status"></div>
+            <div id="question-result" class="result">
+                <h3></h3>
+                <pre id="question-answer"></pre>
+            </div>
+        </div>
+
+        <div class="centered-button">
+            <button id="clear-all" class="btn btn-clear">重新分析</button>
+        </div>
+    </div>
+
+	<!-- JavaScript -->
+    <script>
+        window.onload = function() {
+	        const params = new URLSearchParams(window.location.search);
+	        const url = params.get('url');
+	
+	        if (!url) {
+	            document.getElementById('analysis-result').innerHTML = "<strong>未提供有效的 URL。</strong>";
+	            return;
+	        }
+	
+	        let statusElement = document.getElementById('analysis-result');
+	        statusElement.innerHTML = "<strong>正在爬取評論，請稍候...</strong>";
+	        
+	        // 動態點點點效果
+	        let dots = 0;
+	        const loadingInterval = setInterval(() => {
+	            dots = (dots + 1) % 4;
+	            const dotsText = ".".repeat(dots);
+	            const spaces = "\u00A0".repeat(3 - dots); // 用不換行空格補齊
+	            statusElement.innerHTML = `<strong>正在爬取評論，請稍候${dotsText}${spaces}</strong>`;
+        }, 500); // 每 500 毫秒更新一次
+	
+	        // 發送請求來觸發爬取評論和分析
+	        fetch('http://localhost:5000/start-scraping', {
+	            method: 'POST',
+	            headers: { 'Content-Type': 'application/json' },
+	            body: JSON.stringify({ url: url })
+	        })
+	        .then(response => response.json())
+	        .then(data => {
+	            if (data.success) {
+	                // 停止點點點效果並更新狀態文字
+	                clearInterval(loadingInterval);
+	                statusElement.innerHTML = "<strong>正在分析，請稍候...</strong>";
+	                
+	                // 開始新的點點點動畫效果
+	                dots = 0;
+	                const analyzingInterval = setInterval(() => {
+	                    dots = (dots + 1) % 4;
+	                    const dotsText = ".".repeat(dots);
+	                    const spaces = "\u00A0".repeat(3 - dots); 
+	                    statusElement.innerHTML = `<strong>正在分析，請稍候${dotsText}${spaces}</strong>`;
+                }, 500);
+	
+	                // 當分析完成後，顯示結果並停止動畫
+	                setTimeout(() => {
+	                    clearInterval(analyzingInterval); // 停止動畫
+	                    statusElement.innerHTML = data.analysis;
+	                }, 3000); // 模擬分析時間訂定為 3000 毫秒
+	            } else {
+	                clearInterval(loadingInterval);
+	                statusElement.innerHTML = `<strong>分析失敗：${data.error}</strong>`;
+	            }
+	        })
+	        .catch(error => {
+	            clearInterval(loadingInterval);
+	            statusElement.innerHTML = `<strong>請求失敗：${error.message}</strong>`;
+	        });
+
+	        // 使用者提問
+	        document.getElementById('ask-question').onclick = function() {
+	            const question = document.getElementById('user-question').value.trim();
+	            const questionResultElement = document.getElementById('question-result');
+	
+	            if (!question) {
+	                alert("請輸入問題！");
+	                return;
+	            }
+	
+	            // 顯示"正在處理問題，請稍候..."並且帶有動態點點點效果
+	            questionResultElement.innerHTML = "<strong>正在處理問題，請稍候...</strong>";
+	            let questionDots = 0;
+	
+	            const questionLoadingInterval = setInterval(() => {
+	                questionDots = (questionDots + 1) % 4;
+	                const questionDotsText = ".".repeat(questionDots);
+	                const questionSpaces = "\u00A0".repeat(3 - questionDots);
+	                questionResultElement.innerHTML = `<strong>正在處理問題，請稍候${questionDotsText}${questionSpaces}</strong>`;
+	            }, 500);
+	            
+	            fetch('http://localhost:5000/ask-question', {
+	                method: 'POST',
+	                headers: { 'Content-Type': 'application/json' },
+	                body: JSON.stringify({ question: question })
+	            }).then(response => response.json())
+	              .then(data => {
+	              	  clearInterval(questionLoadingInterval); // 停止點點點效果
+	          		  
+	                  if (data.success) {
+	                    questionResultElement.innerHTML = data.answer; // 顯示回答
+	                } else {
+	                    questionResultElement.innerHTML = `<strong>處理失敗：${data.error}</strong>`;
+	                }
+	            })
+	            .catch(error => {
+	                clearInterval(questionLoadingInterval); 
+	                questionResultElement.innerHTML = `<strong>請求失敗：${error.message}</strong>`;
+	            });
+	        };
+	    };
+	    
+	    // 檢測頁面關閉並清除記憶
+	    window.addEventListener('beforeunload', function () {
+	        // 發送 POST 請求來清除記憶
+	        fetch('/clear-memory', {
+	            method: 'POST',
+	            headers: {
+	                'Content-Type': 'application/json',
+	            },
+	        }).then(response => response.json())
+	          .then(data => {
+	              if (data.success) {
+	                  console.log("Memory cleared successfully.");
+	              } else {
+	                  console.error("Error clearing memory:", data.error);
+	              }
+	          }).catch(error => {
+	              console.error("Error clearing memory:", error);
+	          });
+	    });
+	    	
+	        // 清除所有內容並跳轉回首頁
+	        document.getElementById('clear-all').onclick = function() {
+	            fetch('http://localhost:5000/clear-memory', {
+	                method: 'POST'
+	            }).then(response => response.json())
+	              .then(data => {
+	                  if (data.success) {
+	                      alert('所有內容已清除，對話記憶也已清空。');
+	                      window.location.href = 'http://localhost:5000/';  // 返回首頁
+	                  } else {
+	                      alert('清除記憶失敗，請重試。');
+	                  }
+	              });
+	        };
+    </script>
+    
+</body>
+</html>

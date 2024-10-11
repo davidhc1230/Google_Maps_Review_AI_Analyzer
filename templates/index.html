@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Google Maps 評論分析</title>
+    <!-- CSS -->
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+        h1 {
+            font-size: 50px;
+            margin-bottom: 250px;
+            opacity: 0;
+            visibility: hidden;
+        }
+        .cursor {
+		    display: inline-block;
+		    font-weight: bold;
+		    font-size: 50px;
+		    animation: blink 0.5s steps(2, start) infinite; /* 設定閃爍動畫 */
+		}
+		@keyframes blink {
+		    to { visibility: hidden; } /* 隱藏效果 */
+		}
+        .container {
+            width: 60%;
+            max-width: 800px;
+            text-align: center;
+            padding: 20px;
+            box-shadow: 0px 0px 10px #0000001a;
+            background-color: #f0f0f0;
+            transform: translateY(-150px);
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 1s ease; /* 平滑顯示效果 */
+        }
+        h3 {
+            font-size: 25px;
+        }
+        input {
+		    border: 2px solid #000;
+    		border-radius: 20px;
+    		font-size: 20px;
+    		padding-left: 10px;
+		}
+        .btn {
+        	border: 2px solid #000;
+    		border-radius: 10px;
+            padding: 10px 20px;
+            margin-top: 25px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 20px;
+        }
+    </style>
+</head>
+<body>
+    <h1 id="headline"></h1>
+    <div class="container" id="content-container">
+        <label for="landmark-url">
+            <h3>請輸入 Google Maps 網址：</h3>
+        </label>
+        <input type="text" id="landmark-url" style="width: 80%;" placeholder="https://..."><br>
+        <button id="start-scraping" class="btn">開始分析</button><br>
+    </div>
+
+	<!-- JavaScript -->
+    <script>
+        // 標題文字一個一個出現的動畫效果
+        const text = "Google Maps 評論分析";
+        const headline = document.getElementById('headline');
+        const container = document.getElementById('content-container');
+        let index = 0;
+
+        function typeEffect(callback) {
+		    if (index < text.length) {
+		        headline.innerHTML = text.slice(0, index + 1) + '<span class="cursor">|</span>'; // 目前顯示的字加上游標
+		        index++;
+		        setTimeout(typeEffect, 150); // 每個字出現的間隔時間
+		    } else {
+		        document.querySelector('.cursor').style.display = 'none'; // 標題顯示完畢後隱藏游標
+		        showContainer();
+		    }
+		}
+
+        function showContainer() {
+	    setTimeout(() => {
+	        container.style.visibility = "visible";
+	        container.style.opacity = 1; // 讓 .container 逐漸顯示出來
+	    }, 600); // 延遲 600 毫秒顯示 container
+	}
+
+        window.onload = function() {
+		    // 先讓游標閃爍 2 秒，再開始字體動畫
+		    headline.innerHTML = '<span class="cursor">|</span>';
+		    headline.style.opacity = 1;
+		    headline.style.visibility = "visible";
+		    setTimeout(() => {
+		        typeEffect(showContainer);
+		    }, 1000); // 延遲 1000 毫秒
+		};
+
+        // 網址輸入內容的邏輯，若不符合則會糾正。
+        //接受https://www.google.com/maps、https://maps.app.goo.gl、
+        //https://maps.google.com這幾種網址類型。
+		//不同國家的網域（譬如.tw、.jp...）也能接受，不加https也不會被排除。
+        document.getElementById('start-scraping').onclick = function() {
+	        let url = document.getElementById('landmark-url').value.trim();
+	
+	        // 檢查並補上 https
+	        const regex = /^(https?:\/\/)?(www\.)?(google\.[a-z]{2,3}(\.[a-z]{2})?\/maps|maps\.google\.[a-z]{2,3}(\.[a-z]{2})?|maps\.app\.goo\.gl)/i;
+	
+	        if (!url) {
+	            alert("請輸入網址！"); //未填入網址
+	        } else if (!regex.test(url)) {
+	            alert("請輸入正確的 Google Maps 網址！"); //網址類型不正確
+	        } else {
+	            // 如果沒有 https 開頭，補齊
+	            if (!/^https?:\/\//i.test(url)) url = "https://" + url;
+	            window.location.href = `http://localhost:5000/result?url=${encodeURIComponent(url)}`; //直接跳轉到 result.html，並且通過 URL 參數傳遞目標網址
+	        }
+	    };
+    </script>
+    
+</body>
+</html>
