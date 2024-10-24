@@ -191,3 +191,8 @@ Version 1.0 allows users to provide a Google Maps URL, scrape and analyze the re
 - Summarize reviews to avoid token limits imposed by different LLMs
 - Improve scraping efficiency, as scraping over 2000 reviews may be incomplete due to long page scrolling times
 
+<br>
+
+## 🎥 Demo
+
+👉 [v1.0.1 Demo](https://youtu.be/T_ba2vWOE88)
